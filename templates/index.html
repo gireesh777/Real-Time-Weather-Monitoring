@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Weather Monitoring</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f7f7f7;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 250px;
+            padding: 10px;
+            border: 1px solid #007bff;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            padding: 10px 15px;
+        }
+
+        #weather-cards {
+            margin-top: 20px;
+        }
+
+        .weather-card {
+            margin-bottom: 20px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        .card-body {
+            padding: 15px;
+        }
+
+        .card-title {
+            color: #007bff;
+            font-size: 1.25rem;
+        }
+
+        .alert {
+            margin-top: 20px;
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">Real-Time Weather Monitoring</h1>
+        <div class="search-container">
+            <input type="text" id="city-input" class="search-input" placeholder="Enter city name..." />
+            <button class="btn btn-primary" onclick="fetchCityWeather()">Get Weather</button>
+        </div>
+
+        <div id="weather-cards" class="row"></div>
+        <div id="alert-container"></div>
+        <h2 class="text-center">Visualize Temperature Trends</h2>
+        <div class="text-center">
+            <select id="city-select" class="form-control" style="width: 200px; display: inline-block;">
+                <option value="Delhi">Delhi</option>
+                <option value="Mumbai">Mumbai</option>
+                <option value="Chennai">Chennai</option>
+                <option value="Bangalore">Bangalore</option>
+                <option value="Kolkata">Kolkata</option>
+                <option value="Hyderabad">Hyderabad</option>
+            </select>
+            <button class="btn btn-primary" onclick="visualizeTemperatureTrends()">Show Trends</button>
+        </div>
+        <div class="text-center">
+            <img id="trend-image" />
+        </div>
+    </div>
+
+    <script>
+        async function fetchCityWeather() {
+            const cityInput = document.getElementById('city-input').value;
+            const apiUrl = `api/weather/${cityInput}`;
+            const weatherCards = document.getElementById('weather-cards');
+
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error('City not found');
+                }
+
+                const data = await response.json();
+                weatherCards.innerHTML = ''; // Clear previous results
+                displayWeather(data[0]); // Display the first city data
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function displayWeather(cityWeather) {
+            const weatherCards = document.getElementById('weather-cards');
+            const weatherCard = `
+                <div class="col-md-4 weather-card">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">${cityWeather.city}</h5>
+                            <p class="card-text">Temperature: ${cityWeather.temperature}°C</p>
+                            <p class="card-text">Max Temp: ${cityWeather.max_temp}°C</p>
+                            <p class="card-text">Min Temp: ${cityWeather.min_temp}°C</p>
+                            <p class="card-text">Condition: ${cityWeather.condition}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            weatherCards.innerHTML += weatherCard; // Add the new weather card
+        }
+
+        function fetchWeather() {
+            fetch('/api/weather/current')
+                .then(response => response.json())
+                .then(data => {
+                    const weatherCards = document.getElementById('weather-cards');
+                    weatherCards.innerHTML = '';
+                    data.forEach(cityWeather => {
+                        const card = `
+                            <div class="col-md-4 weather-card">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${cityWeather.city}</h5>
+                                        <p class="card-text">Temperature: ${cityWeather.temperature}°C</p>
+                                        <p class="card-text">Max Temp: ${cityWeather.max_temp}°C</p>
+                                        <p class="card-text">Min Temp: ${cityWeather.min_temp}°C</p>
+                                        <p class="card-text">Condition: ${cityWeather.condition}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        weatherCards.innerHTML += card;
+                    });
+                });
+        }
+
+        function fetchWeatherAlerts() {
+            fetch('/api/alerts')
+                .then(response => response.json())
+                .then(data => {
+                    const alertContainer = document.getElementById('alert-container');
+                    alertContainer.innerHTML = '';
+                    data.forEach(alert => {
+                        const alertHtml = `
+                            <div class="alert alert-danger" role="alert">
+                                ${alert.message}
+                            </div>
+                        `;
+                        alertContainer.innerHTML += alertHtml;
+                    });
+                });
+        }
+
+        function visualizeTemperatureTrends() {
+            const city = document.getElementById('city-select').value;
+            fetch(`/api/trends/${city}`)
+                .then(response => response.json())
+                .then(data => {
+                    const trendImage = document.getElementById('trend-image');
+                    trendImage.src = 'data:image/png;base64,' + data.image;
+                });
+        }
+
+        fetchWeather();
+        fetchWeatherAlerts();
+        setInterval(fetchWeather, 300000);
+        setInterval(fetchWeatherAlerts, 300000);
+    </script>
+</body>
+
+</html>
